@@ -1,0 +1,147 @@
+;######################################################################################
+;<HEAD>
+
+	
+
+	;*************************************************
+	;<PROGRAM VARIABLES>
+	DVAR $INDEX, $STR_LEN, $SUM
+	DVAR $COM_9
+	DVAR $SET_PRES
+	;</PROGRAM VARIABLES>
+	;*************************************************
+	;<CONTROLLER SETUP>
+	;</CONTROLLER SETUP>
+
+;</HEAD>
+
+;######################################################################################
+;<BODY>
+	' Clear all previous messages
+	MSGCLEAR -1
+	
+	' Setup the dispenser
+	CALL SETUP_DISPENSER
+	
+	' Run a test to vary the pressure set
+	$SET_PRES = $global[3]
+	CALL SET_PRES
+	CALL DISPENSE
+	
+	;*************************************************************************
+	' End the program
+	END PROGRAM
+;</BODY>
+
+;######################################################################################
+;<TAIL>
+	
+	;*************************************************
+	;<SUBROUTINE SETUP>
+	' Place the dispenser in the proper units (PSI) and dispense mode (steady)
+	DFS SETUP_DISPENSER
+		' Interfacing with com port 9
+		MSGDISPLAY 1, "Opening com port 9."
+		$COM_9 = FILEOPEN "COM9", 2
+
+		' Configuring the settings of com port 9
+		MSGDISPLAY 1, "Configuring com port 9..."
+		COMMINIT $COM_9, "baud=115200 parity=N data=8 stop=1"
+		
+		' Enquiry command sent to com port 9
+		FILEWRITENOTERM $COM_9, "{%c}", 5
+		
+		' Write the pressure unit set to PSI string and end of transmission commands to com 9
+		MSGDISPLAY 1, "Sending set units to PSI command to com port 9."
+		FILEWRITENOTERM $COM_9, "{%c}", 2, "06E6  007F", 3
+		FILEWRITENOTERM $COM_9, "{%c}", 4
+		
+		' Enquiry command sent to com port 9
+		FILEWRITENOTERM $COM_9, "{%c}", 5
+		
+		' Write the steady mode string and end of transmission commands to com 9
+		MSGDISPLAY 1, "Sending set mode to steady mode to com port 9."
+		FILEWRITENOTERM $COM_9, "{%c}", 2,"04MT  BB", 3
+		FILEWRITENOTERM $COM_9, "{%c}", 4
+
+		' Close com port 9
+		MSGDISPLAY 1, "Closing com port 9."
+		FILECLOSE $COM_9
+	ENDDFS
+	
+	' Generate an air output pressure command string using the pressure stored in the task variable $SET_PRES
+	' Store the generated air output pressure command string in $strtask[0]
+	DFS GET_PRES_STR
+		' Set the target air output pressure. Limit the air output pressure to maximum.
+		IF $SET_PRES > $global[0]
+			MSGDISPLAY 1, "{%0.1f}", "Pressure cannot be set greater than",$global[0],"PSI. Limiting to",$global[0],"PSI."
+			$SET_PRES = $global[0]
+		END IF
+		
+		' Building the "set pressure" string to be sent to com port 9
+		$strtask[2] = "08PS  "
+		$strtask[1] = MAKESTRING "{%d}" (($SET_PRES+10000)*10)
+		$strtask[1] = STRMID($strtask[1], 2, 5)
+		$strtask[0] = $strtask[2] + $strtask[1]
+		
+		' Calculating the checksum appended to the pressure set string
+		$STR_LEN = STRLEN($strtask[0])
+		$SUM = 0
+		FOR $INDEX = 0 TO ($STR_LEN-1) STEP 1
+			$SUM = $SUM - STRTOASCII($strtask[0], $INDEX)
+		NEXT $INDEX
+		$SUM = $SUM BAND 0x000000ff
+		$strtask[0] = MAKESTRING "{#H}" $strtask[0] $SUM
+	ENDDFS
+	
+	' Send an air output pressure command string stored in $strtask[0] to com port 9
+	DFS SET_PRES
+		' Get the proper pressure string
+		CALL GET_PRES_STR
+	
+		' Interfacing with com port 9
+		MSGDISPLAY 1, "Opening com port 9."
+		$COM_9 = FILEOPEN "COM9", 2
+
+		' Configuring the settings of com port 9
+		MSGDISPLAY 1, "Configuring com port 9..."
+		COMMINIT $COM_9, "baud=115200 parity=N data=8 stop=1"
+		
+		' Enquiry command sent to com port 9
+		FILEWRITENOTERM $COM_9, "{%c}", 5
+		
+		' Write the pressure set string and end of transmission commands to com 9
+		MSGDISPLAY 1, "Sending set air output pressure command to com port 9."
+		FILEWRITENOTERM $COM_9, "{%c}", 2,  $strtask[0], 3
+		FILEWRITENOTERM $COM_9, "{%c}", 4
+
+		' Close com port 9
+		MSGDISPLAY 1, "Closing com port 9."
+		FILECLOSE $COM_9
+	ENDDFS
+	
+	' Send a toggle dispense command string to com port 9
+	DFS DISPENSE
+		' Interfacing with com port 9
+		MSGDISPLAY 1, "Opening com port 9."
+		$COM_9 = FILEOPEN "COM9", 2
+
+		' Configuring the settings of com port 9
+		MSGDISPLAY 1, "Configuring com port 9..."
+		COMMINIT $COM_9, "baud=115200 parity=N data=8 stop=1"
+		
+		' Enquiry command sent to com port 9
+		FILEWRITENOTERM $COM_9, "{%c}", 5
+		
+		' Write the pressure set string and end of transmission commands to com 9
+		MSGDISPLAY 1, "Sending dispense command to com port 9."
+		FILEWRITENOTERM $COM_9, "{%c}", 2,"04DI  CF", 3
+		FILEWRITENOTERM $COM_9, "{%c}", 4
+
+		' Close com port 9
+		MSGDISPLAY 1, "Closing com port 9."
+		FILECLOSE $COM_9
+	ENDDFS
+	;</SUBROUTINE SETUP>
+	
+;</TAIL>

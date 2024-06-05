@@ -1,0 +1,55 @@
+;######################################################################################
+;<HEAD>
+
+	;*************************************************
+	;<PROGRAM VARIABLES>
+	;</PROGRAM VARIABLES>
+	
+	;*************************************************
+	;<CONTROLLER SETUP>
+		METRIC							' set distance units to mm
+		SECONDS							' set time base to seconds
+		INCREMENTAL						' set to incremental/relative motion mode
+		RAMP RATE 1000					' set accel/decel rate (mm/s^2)
+		VELOCITY ON						' turn on velocity profiling
+		G16 X Y Z						' set the X Y Z axes to correspond to i j k for circular interpolation
+		RAMP TYPE SINE					' set acceleration method
+		SETPARM X TrajectoryIIRFilter 0	' you might increase this to make motion smoother on sharp turns. Increase in increments of 10.
+		SETPARM Y TrajectoryIIRFilter 0	' you might increase this to make motion smoother on sharp turns. Increase in increments of 10.
+		CoordinatedAccelLimit=0			' set accel limit on task
+		CoordinatedCircularAccelLimit=0	' set accel limit during a circle
+		ROUNDING AXES X Y				' Axes on which to do corner rounding
+		ROUNDING OFF					' Turn off corner rounding by default
+		ROUNDING TOLERANCE 0.01			' Tolerate a 10 micron error in conrner rounding
+		ENABLE X Y Z					' turn on XYZ axes
+	;</CONTROLLER SETUP>
+
+;</HEAD>
+
+;######################################################################################
+;<BODY>
+
+	' Set current program position to origin
+	;POSOFFSET SET X0 Y0 Z0
+	
+	' Move the printer head
+	G1 X15 F1.0*$global[1]
+	G1 Z30 F1.0*$global[1]
+	G1 X-30 Z30 F10.0*$global[1]
+	
+	' Diable movement in all axes
+	DISABLE X Y Z
+	
+	;*************************************************************************
+	' End the program
+	END PROGRAM
+;</BODY>
+
+;######################################################################################
+;<TAIL>
+	
+	;*************************************************
+	;<SUBROUTINE SETUP>
+	;</SUBROUTINE SETUP>
+	
+;</TAIL>

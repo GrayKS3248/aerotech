@@ -1,0 +1,60 @@
+;######################################################################################
+;<HEAD>
+
+	;*************************************************
+	;<PROGRAM VARIABLES>
+	DVAR $CURR_TIME, $TASK_2_STATUS, $PREV_DISP_CMD
+	;</PROGRAM VARIABLES>
+
+	;*************************************************
+	;<GLOBAL VARIABLES>
+	;DEFAULT CONSTANTS
+	$global[0] = 14.3 ' Maximum air output of pump in PSI
+	$global[1] = 3.0  ' DefaultPrintSpeed: Head speed in mm/s
+	$global[2] = 0.0  ' Used for dispenser toggling
+	
+	;VARIABLES
+	$global[3] = 1.60 ' SetPressure: Air pressure used during printing
+	$global[4] = 0.95 ' HorizontalSpeedScalar: Multiplying scalar for print speed during horizontal movement
+	$global[5] = 0.50 ' VerticalSpeedScalar: Multiplying scalar for print speed during veritcal movement
+	
+	;</GLOBAL VARIABLES>
+	
+	;*************************************************
+	;<CONTROLLER SETUP>
+	;</CONTROLLER SETUP>
+
+;</HEAD>
+
+;######################################################################################
+;<BODY>
+	TIMER 0 CLEAR
+	$PREV_DISP_CMD = $global[2]
+	
+	PROGRAM 2 RUN "C:\Users\User\Desktop\schaer\Schaer_Test_Movement_Vertical.pgm"
+	$TASK_2_STATUS = TASKSTATUS(2, DATAITEM_TaskState)
+	
+	WHILE $TASK_2_STATUS == 4.0
+		$CURR_TIME = TIMER(0, PERFORMANCE)
+		$TASK_2_STATUS = TASKSTATUS(2, DATAITEM_TaskState)
+		
+		IF $PREV_DISP_CMD != $global[2]
+			$PREV_DISP_CMD = $global[2]
+			PROGRAM 3 RUN "C:\Users\User\Desktop\schaer\Schaer_Test_Dispense.pgm"
+		ENDIF
+		
+	ENDWHILE
+	
+	;*************************************************************************
+	' End the program
+	END PROGRAM
+;</BODY>
+
+;######################################################################################
+;<TAIL>
+	
+	;*************************************************
+	;<SUBROUTINE SETUP>
+	;</SUBROUTINE SETUP>
+	
+;</TAIL>
